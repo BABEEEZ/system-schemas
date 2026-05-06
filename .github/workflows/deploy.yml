@@ -1,0 +1,52 @@
+name: Afternoon System Deploy
+
+on:
+  schedule:
+    # Wakes up at 07:15, 08:15, and 09:15 UTC 
+    # This is 3:15 PM, 4:15 PM, and 5:15 PM Singapore Time
+    - cron: '15 7,8,9 * * *'
+  workflow_dispatch:
+
+jobs:
+  deploy-job:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4 
+
+      - name: Deploy Logic
+        run: |
+          # 15% skip rate (the most consistent worker in your set)
+          if [ $((RANDOM % 100)) -lt 15 ]; then
+            echo "Deployment window skipped."
+            exit 0
+          fi
+
+          # ADDING RANDOM DELAY: This makes the commit time vary by 0-10 minutes 
+          # so it doesn't always happen at exactly 15 minutes past the hour.
+          SLEEP_TIME=$((RANDOM % 600))
+          echo "Waiting $SLEEP_TIME seconds to look natural..."
+          sleep $SLEEP_TIME
+
+          git config --global user.name "BABEEEZ"
+          git config --global user.email "Bbab3369@gmail.com"
+
+          # Infrastructure-focused messages
+          MESSAGES=(
+            "feat: update environment variables"
+            "chore: refactor deployment manifest"
+            "fix: adjust container resource limits"
+            "style: reorder yaml keys for readability"
+            "feat: add new service endpoint"
+          )
+          
+          MSG=${MESSAGES[$RANDOM % ${#MESSAGES[@]}]}
+
+          # Modifying a YAML file
+          echo "last_verified: $(date +%Y-%m-%dT%H:%M:%SZ)" >> cluster_config.yaml
+          echo "node_id: $RANDOM" >> cluster_config.yaml
+
+          git add cluster_config.yaml
+          git commit -m "$MSG"
+          git push
